@@ -1,5 +1,4 @@
 #2Q358NIIGNCMQME0
-
 from alpha_vantage.timeseries import TimeSeries
 import matplotlib.pyplot as plt
 import sys
@@ -13,14 +12,12 @@ from itertools import count
 from datetime import timedelta
 import matplotlib.pyplot as plt
 
-
 #pd.read_csv('revenue.csv').T.to_csv('revenue.csv',header=False)
+
 index = {}
 stockstickers = ["TOL", "DHI", "LEN", 	"NVR",	"PMH", 	 "TMHC"	, "AVHI" , "BZH" , "CVCO", "CCS", "GBRK" ,"HOV"	, "KBH"	, "LGIH" , "WLH", "MHO"	,"MDC",	"MTH", "TPH"]
 revenue = {}
 stockPrices = {}
-
-
 
 def standardizeDate(vals , listOfData):
 
@@ -50,8 +47,14 @@ with open('cleanRevenue.csv') as csvFile:
     for row in reader:
         for stockTicker in stockstickers:
             if row[stockTicker] != '' :
-                lookUpVal = 'Date_' + stockTicker
-                revenue[stockTicker][row[lookUpVal]] = row[stockTicker]
+                lookUpVal = '\xef\xbb\xbfDate_' + stockTicker
+                if lookUpVal in row:
+                    date = row[lookUpVal].split('\\')[0]
+                    revenue[stockTicker][date] = row[stockTicker]
+                else:
+                    lookUpVal = 'Date_' + stockTicker
+                    date = row[lookUpVal].split('\\')[0]
+                    revenue[stockTicker][date] = row[stockTicker]
 
 with open('stockPrices.csv') as csvFile:
     reader = csv.DictReader(csvFile)
@@ -60,7 +63,8 @@ with open('stockPrices.csv') as csvFile:
             if row[stockTicker] != '' :
                 lookUpVal = '\xef\xbb\xbfDate_' + stockTicker
                 if lookUpVal in row:
-                    stockPrices[stockTicker][row[lookUpVal]] = row[stockTicker]
+                    date = row[lookUpVal].split('\\')[0]
+                    stockPrices[stockTicker][date] = row[stockTicker]
                 else:
                     lookUpVal = 'Date_' + stockTicker
                     stockPrices[stockTicker][row[lookUpVal]] = row[stockTicker]
@@ -105,24 +109,27 @@ def analysis (symbol):
         x.append(quarters)
         y.append(((money/float(10000))-1) )
         quarters = quarters + 1
-        print differnece
+        #print differnece
         if diff[differnece] > trading_stdev+ trading_mean :
             money = money +  -1 * returns(differnece, symbol, money)
         elif diff[differnece] < trading_mean - trading_stdev :
             money = money + 1 * returns(differnece, symbol, money)
 
-    print str((float(money/10000) ))
+    #print str((float(money/10000) ))
     annualizedReturn = ((pow(float(money/10000) ,4/ float(quarters)) -1 ) )
+
+    #print symbol #+ "    " + str(annualizedReturn * 100)
+
     temp = statistics.stdev(y)
-    sharpe = (annualizedReturn - 0.02)/temp
+    sharpe = (annualizedReturn)/temp
     print sharpe
 
     # get stock price and trade
     plt.scatter(x,y, color='k', s=25, marker="o")
 
     plt.xlabel('quarters passed')
-    plt.ylabel('revenue')
-    plt.title('$10000 invested in ' + symbol)
+    plt.ylabel('percent return %')
+    plt.title('Percent return vs. quarters passed for ' + symbol)
     plt.legend()
     #plt.show()
 
